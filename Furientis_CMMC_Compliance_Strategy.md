@@ -147,50 +147,9 @@ However, separation also introduces complexity. The organization must maintain t
 
 The Furientis dual-echelon architecture employs both physical and logical separation mechanisms to establish a robust boundary between the government and commercial environments. Physical separation provides the strongest assurance that data cannot cross boundaries, as systems that are not connected cannot exchange data regardless of software configuration. Logical separation, implemented through network segmentation, access controls, and identity management, provides flexibility and cost efficiency while still maintaining meaningful boundaries.
 
-```
-+------------------------------------------------------------------+
-|                    FURIENTIS DUAL-ECHELON ARCHITECTURE           |
-+------------------------------------------------------------------+
-|                                                                  |
-|  +---------------------------+   +---------------------------+   |
-|  |   GOVERNMENT ECHELON      |   |   COMMERCIAL ECHELON      |   |
-|  |   (CUI Environment)       |   |   (Non-CUI Environment)   |   |
-|  +---------------------------+   +---------------------------+   |
-|  |                           |   |                           |   |
-|  |  +---------------------+  |   |  +---------------------+  |   |
-|  |  | AWS GovCloud        |  |   |  | AWS Commercial      |  |   |
-|  |  | - EC2 (GPU/CPU)     |  |   |  | - EC2 instances     |  |   |
-|  |  | - S3 (encrypted)    |  |   |  | - S3 storage        |  |   |
-|  |  | - SageMaker         |  |   |  | - Standard services |  |   |
-|  |  | - Bedrock AI        |  |   |  +---------------------+  |   |
-|  |  +---------------------+  |   |                           |   |
-|  |                           |   |  +---------------------+  |   |
-|  |  +---------------------+  |   |  | M365 Commercial     |  |   |
-|  |  | M365 GCC High       |  |   |  | - Email             |  |   |
-|  |  | - Exchange Online   |  |   |  | - SharePoint        |  |   |
-|  |  | - SharePoint (CUI)  |  |   |  | - Teams             |  |   |
-|  |  | - Teams             |  |   |  +---------------------+  |   |
-|  |  +---------------------+  |   |                           |   |
-|  |                           |   |                           |   |
-|  |  +---------------------+  |   |  +---------------------+  |   |
-|  |  | Managed Endpoints   |  |   |  | BYOD Permitted      |  |   |
-|  |  | - FIPS encryption   |  |   |  | - Standard security |  |   |
-|  |  | - EDR/DLP agents    |  |   |  +---------------------+  |   |
-|  |  | - MDM enrolled      |  |   |                           |   |
-|  |  +---------------------+  |   |                           |   |
-|  |                           |   |                           |   |
-|  +---------------------------+   +---------------------------+   |
-|              |                               |                   |
-|              |   +---------------------+     |                   |
-|              +-->|   ENCLAVE BOUNDARY  |<----+                   |
-|                  | - Firewall (block)  |                         |
-|                  | - No direct traffic |                         |
-|                  | - DLP monitoring    |                         |
-|                  | - Audit logging     |                         |
-|                  +---------------------+                         |
-|                                                                  |
-+------------------------------------------------------------------+
-```
+![Furientis Dual-Echelon Architecture](diagrams/dual_echelon_architecture.png)
+
+*Figure 1: Dual-Echelon Architecture showing the separation between Government (CUI) and Commercial (Non-CUI) environments with the enclave boundary controls.*
 
 The government echelon is built on a foundation of FedRAMP-authorized cloud services. Amazon Web Services GovCloud provides the compute, storage, and AI/ML infrastructure required for CUI processing. AWS GovCloud operates in physically isolated data centers within the continental United States, staffed exclusively by U.S. citizens who have been screened and cleared. The infrastructure is designed to meet FedRAMP High and DoD Impact Level 4 and 5 requirements, providing a baseline of security controls that organizations can build upon. Microsoft 365 GCC High provides productivity and collaboration tools, including email, document storage, and communication platforms, in an environment specifically designed for CUI handling.
 
@@ -214,36 +173,9 @@ The third principle is least privilege. Personnel and systems within the enclave
 
 The fourth principle is continuous monitoring. The enclave is not secured once and then left unattended. Security monitoring systems continuously analyze logs, network traffic, and system behavior for indicators of compromise or policy violation. Vulnerability scans run regularly to identify missing patches or misconfigurations. Security personnel review alerts and investigate anomalies. This continuous vigilance ensures that the security posture is maintained over time and that emerging threats are detected and addressed promptly.
 
-```
-CUI DATA FLOW WITHIN GOVERNMENT ECHELON
-========================================
+![CUI Data Flow Within Government Echelon](diagrams/cui_data_flow.png)
 
-  +-------------+      +------------------+      +------------------+
-  | DoD/Prime   |      | Furientis        |      | Furientis        |
-  | Contractor  |----->| GCC High Email   |----->| Engineer         |
-  | (CUI Source)|      | (Encrypted)      |      | Workstation      |
-  +-------------+      +------------------+      +------------------+
-                                                        |
-                       +--------------------------------+
-                       |
-                       v
-  +------------------+      +------------------+      +------------------+
-  | SharePoint       |<---->| Development      |<---->| AWS GovCloud     |
-  | GCC High         |      | Environment      |      | (S3, EC2,        |
-  | (Document Store) |      | (GitHub Ent.)    |      |  SageMaker)      |
-  +------------------+      +------------------+      +------------------+
-         |                         |                         |
-         v                         v                         v
-  +------------------------------------------------------------------+
-  |                    AUDIT LOGGING (CloudTrail, SIEM)              |
-  +------------------------------------------------------------------+
-         |                         |                         |
-         v                         v                         v
-  +------------------------------------------------------------------+
-  |                    ENCRYPTED AT REST & IN TRANSIT                |
-  |                    (FIPS 140-2 validated modules)                |
-  +------------------------------------------------------------------+
-```
+*Figure 2: CUI Data Flow showing how controlled information moves through the Government Echelon from external sources through processing to secure storage, with comprehensive audit logging and encryption.*
 
 ---
 
@@ -529,6 +461,10 @@ When engaging an MSSP, clearly define responsibilities for each CMMC control. So
 
 ## 9. Cost Estimates: Investment Required for CMMC Compliance
 
+![CMMC Compliance Cost Breakdown](diagrams/cost_breakdown_combined.png)
+
+*Figure 3: Cost breakdown showing initial implementation costs (~$345K midpoint) and annual operational costs (~$559K midpoint) by category.*
+
 ### 9.1 Initial Implementation Costs
 
 Achieving CMMC Level 2 compliance requires significant upfront investment in infrastructure, security tools, professional services, and personnel. For an organization starting from a greenfield position like Furientis, initial implementation costs are estimated between $280,000 and $480,000, with the range reflecting choices in scope, vendors, and internal vs. external resource allocation.
@@ -596,6 +532,10 @@ Beyond direct contract access, CMMC certification signals to government customer
 ---
 
 ## 10. Implementation Roadmap: A Phased Approach to Certification
+
+![CMMC Level 2 Implementation Roadmap](diagrams/implementation_roadmap.png)
+
+*Figure 4: 12-Month Implementation Roadmap showing the five phases from Foundation through Certification, with key activities and dependencies.*
 
 ### 10.1 Phase 1: Foundation and Assessment (Months 1-3)
 

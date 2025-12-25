@@ -1,0 +1,39 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a365d', 'primaryTextColor': '#fff', 'primaryBorderColor': '#2c5282', 'fontFamily': 'Arial, sans-serif'}}}%%
+gantt
+    title CMMC Level 2 Implementation Roadmap (12 Months)
+    dateFormat YYYY-MM-DD
+    axisFormat %b
+
+    section Phase 1: Foundation
+    Project Initiation & Governance    :p1a, 2025-01-01, 2w
+    Executive Sponsorship              :p1b, 2025-01-01, 1w
+    Gap Assessment                     :p1c, 2025-01-15, 6w
+    Architecture Design                :p1d, 2025-02-01, 4w
+    Vendor Selection                   :p1e, 2025-02-01, 4w
+    Policy Framework Development       :p1f, 2025-02-15, 4w
+
+    section Phase 2: Implementation
+    AWS GovCloud Deployment            :p2a, 2025-04-01, 8w
+    M365 GCC High Provisioning         :p2b, 2025-04-01, 4w
+    Network Segmentation               :p2c, 2025-04-15, 6w
+    Endpoint Deployment                :p2d, 2025-05-01, 6w
+    Security Tooling Deployment        :p2e, 2025-05-15, 8w
+    Access Control Implementation      :p2f, 2025-06-01, 6w
+
+    section Phase 3: Policy & Training
+    Policy Finalization                :p3a, 2025-08-01, 4w
+    Procedure Development              :p3b, 2025-08-01, 4w
+    Security Awareness Training        :p3c, 2025-08-15, 4w
+    Role-Based Training                :p3d, 2025-09-01, 3w
+    Tabletop Exercises                 :p3e, 2025-09-15, 2w
+
+    section Phase 4: Pre-Assessment
+    Internal Assessment                :p4a, 2025-10-01, 3w
+    Gap Remediation                    :p4b, 2025-10-15, 4w
+    Evidence Compilation               :p4c, 2025-11-01, 3w
+    C3PAO Pre-Engagement               :p4d, 2025-11-01, 2w
+
+    section Phase 5: Certification
+    C3PAO Assessment                   :crit, p5a, 2025-12-01, 3w
+    Finding Response                   :p5b, 2025-12-15, 2w
+    Certification Issuance             :milestone, p5c, 2025-12-28, 1d

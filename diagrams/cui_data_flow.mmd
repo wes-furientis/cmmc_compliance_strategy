@@ -1,0 +1,59 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a365d', 'primaryTextColor': '#fff', 'primaryBorderColor': '#2c5282', 'lineColor': '#2b6cb0', 'secondaryColor': '#2d3748', 'tertiaryColor': '#edf2f7', 'fontFamily': 'Arial, sans-serif'}}}%%
+flowchart TB
+    subgraph title[" "]
+        T["CUI DATA FLOW WITHIN GOVERNMENT ECHELON"]
+    end
+
+    subgraph sources["External Sources"]
+        DOD["DoD / Prime Contractor<br/>(CUI Source)"]
+    end
+
+    subgraph ingress["Secure Ingestion"]
+        EMAIL["GCC High Email<br/>(Encrypted)"]
+    end
+
+    subgraph work["Furientis Work Environment"]
+        WS["Engineer<br/>Workstation"]
+
+        subgraph collab["Collaboration & Storage"]
+            SP["SharePoint<br/>GCC High"]
+            DEV["Development<br/>Environment<br/>(GitHub Ent.)"]
+            AWS["AWS GovCloud<br/>(S3, EC2, SageMaker)"]
+        end
+    end
+
+    subgraph security["Security Controls"]
+        SIEM["AUDIT LOGGING<br/>(CloudTrail, SIEM)"]
+        ENCRYPT["ENCRYPTED AT REST & IN TRANSIT<br/>(FIPS 140-2 Validated Modules)"]
+    end
+
+    DOD --> EMAIL
+    EMAIL --> WS
+    WS --> SP
+    WS --> DEV
+    WS --> AWS
+    SP <--> DEV
+    DEV <--> AWS
+    SP <--> AWS
+
+    SP --> SIEM
+    DEV --> SIEM
+    AWS --> SIEM
+
+    SIEM --> ENCRYPT
+
+    style title fill:none,stroke:none
+    style T fill:#1a365d,stroke:#2c5282,color:#fff,font-weight:bold,font-size:16px
+    style sources fill:#744210,stroke:#975a16,color:#fff
+    style DOD fill:#975a16,stroke:#744210,color:#fff
+    style ingress fill:#2b6cb0,stroke:#2c5282,color:#fff
+    style EMAIL fill:#3182ce,stroke:#2b6cb0,color:#fff
+    style work fill:#1e3a5f,stroke:#2c5282,color:#fff
+    style WS fill:#2b6cb0,stroke:#2c5282,color:#fff
+    style collab fill:#234e70,stroke:#2c5282,color:#fff
+    style SP fill:#3182ce,stroke:#2b6cb0,color:#fff
+    style DEV fill:#3182ce,stroke:#2b6cb0,color:#fff
+    style AWS fill:#3182ce,stroke:#2b6cb0,color:#fff
+    style security fill:#276749,stroke:#22543d,color:#fff
+    style SIEM fill:#38a169,stroke:#276749,color:#fff
+    style ENCRYPT fill:#38a169,stroke:#276749,color:#fff
