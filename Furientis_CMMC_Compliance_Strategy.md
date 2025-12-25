@@ -278,3 +278,201 @@ Some scenarios require careful handling when work spans both environments:
 
 ---
 
+## 4. Cloud Infrastructure Strategy
+
+### 4.1 Cloud Provider Selection: AWS GovCloud
+
+For Furientis's government echelon, **AWS GovCloud (US)** is the recommended primary cloud infrastructure provider for the following reasons:
+
+| Factor | AWS GovCloud Advantage |
+|--------|------------------------|
+| **FedRAMP Authorization** | FedRAMP High baseline - highest level for unclassified workloads |
+| **AI/ML Capabilities** | Amazon Bedrock available with Claude, Llama, and other models |
+| **GPU Compute** | Full range of NVIDIA GPU instances (P4d, P5, G5) for ML workloads |
+| **Data Residency** | All data remains in US, operated by US persons on US soil |
+| **ITAR/EAR Support** | Designed for export-controlled data handling |
+| **Ecosystem** | Extensive service portfolio matches commercial AWS |
+
+### 4.2 AWS GovCloud Services for Furientis
+
+**Compute Resources:**
+
+| Service | Use Case | Instance Types |
+|---------|----------|----------------|
+| EC2 | General compute, application hosting | m5, c5, r5 families |
+| EC2 (GPU) | ML training, inference | p4d.24xlarge, g5.xlarge-48xlarge |
+| EKS | Container orchestration | Managed Kubernetes |
+| Lambda | Serverless functions | N/A |
+| AWS WorkSpaces | Virtual desktops for remote access | Various bundles |
+
+**AI/ML Services:**
+
+| Service | Availability in GovCloud | Notes |
+|---------|--------------------------|-------|
+| Amazon Bedrock | Available | Claude 3.5 Sonnet, Llama 3 models available |
+| Amazon SageMaker | Full availability | Model training, hosting, MLOps |
+| SageMaker JumpStart | Available | Pre-trained open-weight models |
+| AWS Trainium | Coming 2026 | Custom AI accelerator chips |
+
+**Storage Services:**
+
+| Service | Use Case | Encryption |
+|---------|----------|------------|
+| S3 | Object storage, data lakes | SSE-S3, SSE-KMS (FIPS 140-2) |
+| EBS | Block storage for EC2 | AES-256 encryption at rest |
+| EFS | Shared file systems | Encryption in transit and at rest |
+| FSx for Windows | Windows file shares | Integrates with AD |
+
+**Key AWS GovCloud Capabilities for CMMC:**
+
+1. **Amazon Bedrock in GovCloud** - Enables generative AI workloads with CUI:
+   - Anthropic Claude 3.5 Sonnet for advanced reasoning
+   - Meta Llama 3 for open-weight model deployment
+   - Guardrails for responsible AI implementation
+   - Data never leaves the GovCloud boundary
+
+2. **GPU Compute for ML Training:**
+   - P4d instances with NVIDIA A100 GPUs for large model training
+   - G5 instances with NVIDIA A10G for inference and smaller training jobs
+   - Spot instances available for cost optimization on interruptible workloads
+
+3. **Data Lake Architecture:**
+   ```
+   ┌─────────────────────────────────────────────────────────────────┐
+   │                    AWS GovCloud Data Lake                       │
+   ├─────────────────────────────────────────────────────────────────┤
+   │                                                                 │
+   │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐  │
+   │  │ S3 Raw Zone │───▶│S3 Processed │───▶│ S3 Curated/Analytics│  │
+   │  │ (Ingestion) │    │   Zone      │    │        Zone         │  │
+   │  └─────────────┘    └─────────────┘    └─────────────────────┘  │
+   │         │                  │                      │             │
+   │         ▼                  ▼                      ▼             │
+   │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐  │
+   │  │   Glue      │    │   Athena    │    │    QuickSight       │  │
+   │  │  Catalog    │    │   Query     │    │   Visualization     │  │
+   │  └─────────────┘    └─────────────┘    └─────────────────────┘  │
+   │                                                                 │
+   │  All buckets: SSE-KMS encryption, versioning, access logging   │
+   └─────────────────────────────────────────────────────────────────┘
+   ```
+
+### 4.3 Azure Government Alternative
+
+While AWS GovCloud is recommended, **Azure Government** is a viable alternative, particularly if Furientis prioritizes Microsoft ecosystem integration:
+
+| Capability | AWS GovCloud | Azure Government |
+|------------|--------------|------------------|
+| FedRAMP Level | High | High |
+| M365 Integration | Separate systems | Native with GCC High |
+| AI Services | Bedrock, SageMaker | Azure OpenAI (limited models) |
+| GPU Options | P4d, P5, G5 | NC, ND series |
+| Pricing | Generally lower | Competitive |
+| CMMC Tools | Config rules, Security Hub | Azure Policy, Defender |
+
+**Recommendation:** Use AWS GovCloud for compute/AI workloads and Microsoft GCC High for productivity suite. This hybrid approach leverages strengths of both platforms.
+
+### 4.4 FedRAMP and Compliance Inheritance
+
+Understanding FedRAMP authorization levels is critical for CMMC compliance:
+
+| FedRAMP Baseline | Impact Level | Suitable For |
+|------------------|--------------|--------------|
+| Low | Low | Public, non-sensitive data |
+| Moderate | Moderate | Most CUI categories |
+| High | High | Most sensitive CUI, law enforcement, emergency services |
+
+**For CMMC Level 2:** Cloud providers must meet FedRAMP Moderate baseline at minimum. For export-controlled CUI (ITAR/EAR), FedRAMP High is required.
+
+**Compliance Inheritance Benefits:**
+- AWS GovCloud provides ~60% of NIST 800-171 controls as inherited
+- Reduces Furientis's direct implementation burden
+- Documented in AWS's Customer Responsibility Matrix
+- Must still implement customer-responsible controls (access management, data classification, etc.)
+
+### 4.5 Network Architecture in GovCloud
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        AWS GovCloud VPC Architecture                        │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │                          VPC (10.0.0.0/16)                           │  │
+│  │                                                                      │  │
+│  │  ┌────────────────────┐  ┌────────────────────┐  ┌────────────────┐  │  │
+│  │  │  Public Subnet     │  │  Private Subnet    │  │ Data Subnet    │  │  │
+│  │  │  10.0.1.0/24       │  │  10.0.2.0/24       │  │ 10.0.3.0/24    │  │  │
+│  │  │                    │  │                    │  │                │  │  │
+│  │  │  • ALB             │  │  • EC2 Compute     │  │ • RDS          │  │  │
+│  │  │  • NAT Gateway     │  │  • EKS Nodes       │  │ • ElastiCache  │  │  │
+│  │  │  • Bastion Host    │  │  • Lambda          │  │ • S3 Endpoint  │  │  │
+│  │  └────────────────────┘  └────────────────────┘  └────────────────┘  │  │
+│  │                                                                      │  │
+│  │  Security Groups: Least-privilege, deny-by-default                   │  │
+│  │  NACLs: Additional network-level filtering                           │  │
+│  │  VPC Flow Logs: All traffic logged to S3 for audit                   │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                            │
+│  ┌───────────────────┐     ┌───────────────────┐                          │
+│  │  AWS Direct       │     │  Site-to-Site VPN │                          │
+│  │  Connect          │ OR  │  (IPsec)          │                          │
+│  │  (Dedicated)      │     │  (Encrypted)      │                          │
+│  └─────────┬─────────┘     └─────────┬─────────┘                          │
+│            │                         │                                     │
+│            └─────────────┬───────────┘                                     │
+│                          ▼                                                 │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │                    Furientis On-Premises / CUI Enclave                │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.6 AI/ML Workload Architecture
+
+For Furientis's AI/ML work involving CUI:
+
+**Model Development Workflow:**
+
+1. **Data Ingestion** - CUI data lands in encrypted S3 bucket
+2. **Data Preparation** - SageMaker Processing jobs clean and transform data
+3. **Model Training** - SageMaker Training on GPU instances (P4d/G5)
+4. **Model Evaluation** - Automated testing in SageMaker Pipelines
+5. **Model Deployment** - SageMaker Endpoints or Bedrock custom models
+6. **Inference** - API calls from applications within GovCloud
+
+**Using Amazon Bedrock with CUI:**
+
+```python
+# Example: Using Claude in GovCloud for CUI analysis
+import boto3
+
+bedrock = boto3.client(
+    service_name='bedrock-runtime',
+    region_name='us-gov-west-1'  # GovCloud region
+)
+
+response = bedrock.invoke_model(
+    modelId='anthropic.claude-3-5-sonnet-20241022-v2:0',
+    body=json.dumps({
+        "messages": [{"role": "user", "content": cui_document_text}],
+        "max_tokens": 4096
+    })
+)
+# All data remains within GovCloud boundary
+```
+
+### 4.7 Cost Optimization Strategies
+
+AWS GovCloud pricing is typically 20-40% higher than commercial regions. Strategies to manage costs:
+
+| Strategy | Potential Savings | Implementation |
+|----------|-------------------|----------------|
+| Reserved Instances | 30-60% | Commit to 1-3 year terms for steady-state workloads |
+| Spot Instances | Up to 90% | Use for ML training that can handle interruption |
+| Right-sizing | 20-40% | Regular review of instance utilization |
+| S3 Lifecycle Policies | 50%+ on storage | Move cold data to Glacier |
+| Scheduled Scaling | Variable | Scale down dev/test environments off-hours |
+
+---
+
