@@ -33,6 +33,16 @@ COLORS = {
 def escape_xml(text):
     return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
+def strip_markdown(text):
+    """Remove markdown formatting from text."""
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)  # Bold
+    text = re.sub(r'\*(.+?)\*', r'\1', text)  # Italic
+    text = re.sub(r'__(.+?)__', r'\1', text)  # Bold alt
+    text = re.sub(r'_(.+?)_', r'\1', text)  # Italic alt
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)  # Links
+    text = re.sub(r'`([^`]+)`', r'\1', text)  # Inline code
+    return text
+
 def parse_markdown(md_path):
     """Parse markdown file into structured content."""
     with open(md_path, 'r') as f:
@@ -113,9 +123,7 @@ def parse_markdown(md_path):
     return elements
 
 def create_paragraph_xml(text, style="Normal"):
-    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)  # Remove bold markers
-    text = re.sub(r'\*(.+?)\*', r'\1', text)  # Remove italic markers
-    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)  # Remove links, keep text
+    text = strip_markdown(text)
     return f'''<w:p><w:pPr><w:pStyle w:val="{style}"/></w:pPr>
 <w:r><w:t xml:space="preserve">{escape_xml(text)}</w:t></w:r></w:p>'''
 
@@ -153,8 +161,9 @@ def create_table_xml(rows):
         for cell in row:
             shading = f'<w:shd w:val="clear" w:fill="{COLORS["table_header_bg"]}"/>' if idx == 0 else ''
             bold = '<w:b/>' if idx == 0 else ''
+            cell_text = strip_markdown(str(cell))
             xml += f'''<w:tc><w:tcPr><w:tcW w:w="{col_width}" w:type="dxa"/>{shading}</w:tcPr>
-<w:p><w:r><w:rPr>{bold}</w:rPr><w:t>{escape_xml(str(cell))}</w:t></w:r></w:p></w:tc>'''
+<w:p><w:r><w:rPr>{bold}</w:rPr><w:t>{escape_xml(cell_text)}</w:t></w:r></w:p></w:tc>'''
         xml += '</w:tr>'
 
     xml += '</w:tbl>'
@@ -231,11 +240,11 @@ def generate_docx(md_path, output_path):
         elif elem_type == 'bullet':
             body_xml += f'''<w:p><w:pPr><w:pStyle w:val="ListBullet"/>
 <w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>
-<w:r><w:t>{escape_xml(content)}</w:t></w:r></w:p>'''
+<w:r><w:t>{escape_xml(strip_markdown(content))}</w:t></w:r></w:p>'''
         elif elem_type == 'numbered':
             body_xml += f'''<w:p><w:pPr><w:pStyle w:val="ListNumber"/>
 <w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr>
-<w:r><w:t>{escape_xml(content)}</w:t></w:r></w:p>'''
+<w:r><w:t>{escape_xml(strip_markdown(content))}</w:t></w:r></w:p>'''
         elif elem_type == 'code':
             body_xml += create_code_block_xml(content)
         elif elem_type == 'table':

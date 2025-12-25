@@ -8,6 +8,17 @@ import os
 import re
 
 TOTAL_STEPS = 10
+
+def strip_markdown(text):
+    """Remove markdown formatting from text."""
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)  # Bold
+    text = re.sub(r'\*(.+?)\*', r'\1', text)  # Italic
+    text = re.sub(r'__(.+?)__', r'\1', text)  # Bold alt
+    text = re.sub(r'_(.+?)_', r'\1', text)  # Italic alt
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)  # Links
+    text = re.sub(r'`([^`]+)`', r'\1', text)  # Inline code
+    return text
+
 current_step = 0
 
 def progress(msg):
@@ -61,6 +72,7 @@ class SimplePDF:
         return lines or ['']
 
     def add_heading(self, text, level=1):
+        text = strip_markdown(text)
         sizes = {1: 18, 2: 14, 3: 12, 4: 11}
         size = sizes.get(level, 11)
         self._check_page(size + 20)
@@ -70,9 +82,7 @@ class SimplePDF:
         self.y -= size + 8
 
     def add_para(self, text, indent=0):
-        text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
-        text = re.sub(r'\*(.+?)\*', r'\1', text)
-        text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+        text = strip_markdown(text)
         lines = self._wrap(text, 85 - indent//6)
         for line in lines:
             self._check_page(14)
@@ -83,6 +93,7 @@ class SimplePDF:
         self.y -= 4
 
     def add_bullet(self, text):
+        text = strip_markdown(text)
         self._check_page(14)
         self.current_content.append(f"BT /F1 11 Tf {self.margin + 20} {self.y} Td (\\225) Tj ET")
         lines = self._wrap(text, 75)
@@ -94,6 +105,7 @@ class SimplePDF:
             self.y -= 14
 
     def add_numbered(self, num, text):
+        text = strip_markdown(text)
         self._check_page(14)
         self.current_content.append(f"BT /F1 11 Tf {self.margin + 20} {self.y} Td ({num}.) Tj ET")
         lines = self._wrap(text, 75)
