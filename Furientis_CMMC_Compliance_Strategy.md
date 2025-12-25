@@ -476,3 +476,311 @@ AWS GovCloud pricing is typically 20-40% higher than commercial regions. Strateg
 
 ---
 
+## 5. IT Infrastructure Requirements
+
+### 5.1 Endpoint Requirements
+
+All endpoints accessing CUI must meet specific security requirements:
+
+**Hardware Standards:**
+
+| Component | Requirement | Notes |
+|-----------|-------------|-------|
+| Processor | Modern x86-64 or ARM | TPM 2.0 required for Windows 11 |
+| TPM | TPM 2.0 | Required for BitLocker, secure boot |
+| Storage | SSD with hardware encryption | Self-encrypting drives preferred |
+| Memory | 16GB+ recommended | For security tools overhead |
+| Webcam/Mic | Physical covers available | Privacy considerations |
+
+**Recommended Laptop Models:**
+- Dell Latitude 5000/7000 series (TAA compliant)
+- Lenovo ThinkPad T/X series (TAA compliant)
+- HP EliteBook 800 series (TAA compliant)
+
+*Note: TAA (Trade Agreements Act) compliance is required for many government contracts.*
+
+**Endpoint Security Stack:**
+
+| Layer | Solution | Purpose |
+|-------|----------|---------|
+| OS Hardening | CIS Benchmarks, STIG | Baseline configuration |
+| Disk Encryption | BitLocker (FIPS mode) | Data at rest protection |
+| EDR/XDR | CrowdStrike Falcon GovCloud, Microsoft Defender for Endpoint | Threat detection and response |
+| DLP | Microsoft Purview DLP | Prevent CUI exfiltration |
+| VPN | Always-on VPN to enclave | Encrypted tunnel |
+| Patch Management | WSUS, Intune, or SCCM | Timely security updates |
+
+### 5.2 Identity and Access Management
+
+**Core IAM Requirements (NIST 800-171):**
+
+| Control | Requirement | Implementation |
+|---------|-------------|----------------|
+| 3.5.1 | Identify users and devices | Azure AD/Entra ID in GCC High |
+| 3.5.2 | Authenticate users/devices | MFA required for all access |
+| 3.5.3 | Multi-factor authentication | Microsoft Authenticator, FIDO2 keys |
+| 3.5.7 | Password complexity | 14+ characters, complexity rules |
+| 3.5.8 | Password reuse prevention | Remember 24 passwords |
+| 3.5.10 | Session lock | 15-minute inactivity timeout |
+
+**Recommended IAM Architecture:**
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                    Identity Architecture                            │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │              Azure AD (Entra ID) - GCC High Tenant          │   │
+│  │                                                             │   │
+│  │  • Primary identity provider for CUI enclave                │   │
+│  │  • Conditional Access policies                              │   │
+│  │  • MFA enforcement                                          │   │
+│  │  • Privileged Identity Management (PIM) for admins          │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                              │                                      │
+│                              ▼                                      │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐  │
+│  │  M365 GCC High   │  │  AWS GovCloud    │  │  On-Prem Apps    │  │
+│  │  (SSO via SAML)  │  │  (SSO via SAML)  │  │  (SAML/OIDC)     │  │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘  │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**MFA Options:**
+1. **Microsoft Authenticator** - Push notifications, number matching (Recommended)
+2. **FIDO2 Security Keys** - YubiKey 5 series, phishing-resistant
+3. **Hardware Tokens** - RSA SecurID (legacy, if required)
+4. **SMS/Phone** - Not recommended, but available as backup
+
+### 5.3 Shared Storage and File Collaboration
+
+**Primary Recommendation: SharePoint Online (GCC High)**
+
+| Feature | Capability |
+|---------|------------|
+| Storage | 1TB+ per user, shared team sites |
+| Collaboration | Real-time co-authoring in Office apps |
+| Security | DLP policies, sensitivity labels, encryption |
+| Compliance | eDiscovery, retention policies, audit logs |
+| External Sharing | Disabled by default for CUI; enable selectively with controls |
+
+**Alternative: AWS FSx for Windows File Server**
+- Traditional SMB file shares in GovCloud
+- Integrates with on-premises Active Directory
+- Useful for legacy applications requiring mapped drives
+
+**File Sharing Security Controls:**
+1. **Sensitivity Labels** - Auto-classify documents containing CUI
+2. **DLP Policies** - Block sharing of labeled content externally
+3. **Conditional Access** - Require compliant device for access
+4. **Audit Logging** - Track all file access and sharing
+5. **Encryption** - Files encrypted at rest and in transit
+
+### 5.4 Email and Collaboration
+
+**Microsoft 365 GCC High is Required** for email handling CUI:
+
+| Service | Commercial M365 | GCC | GCC High |
+|---------|-----------------|-----|----------|
+| DFARS 7012 Compliant | No | Partial | Yes |
+| Data Residency | Global | US | US (Azure Gov) |
+| Personnel | Global | US persons | US persons + screening |
+| FedRAMP | N/A | Moderate | High |
+| CMMC L2 Suitable | No | Limited | Yes |
+
+**GCC High Email Configuration:**
+- Enable S/MIME or Microsoft Purview Message Encryption for CUI
+- Configure transport rules to enforce encryption for external recipients
+- Implement email DLP policies
+- Enable advanced threat protection (Defender for Office 365)
+
+**Teams for Collaboration:**
+- GCC High Teams supports private channels for sensitive discussions
+- Meeting recordings stored in compliant SharePoint
+- Guest access disabled or tightly controlled
+- Chat retention policies aligned with record requirements
+
+### 5.5 Remote Access and VPN
+
+**Always-On VPN Architecture:**
+
+| Solution | Pros | Cons |
+|----------|------|------|
+| Windows Always On VPN | Native, integrates with Intune | Windows only |
+| Cisco AnyConnect | Mature, cross-platform | Additional licensing |
+| Palo Alto GlobalProtect | Integrates with NGFW | Vendor lock-in |
+| Zscaler Private Access | Zero trust, cloud-native | Subscription cost |
+
+**Recommendation for Furientis:** Start with Windows Always On VPN for Windows endpoints; evaluate Zscaler for zero-trust architecture as organization scales.
+
+**Remote Access Security Controls:**
+1. **Device Compliance** - Only compliant, managed devices can connect
+2. **MFA** - Required for all VPN connections
+3. **Split Tunneling** - Disabled for CUI access; all traffic through VPN
+4. **Geo-restrictions** - Block connections from high-risk countries
+5. **Session Limits** - Maximum session duration, re-authentication required
+
+### 5.6 SIEM and Security Monitoring
+
+**CMMC Level 2 Audit Requirements:**
+- AU.2.041: Ensure actions can be traced to individual users
+- AU.2.042: Create and retain audit logs
+- AU.3.045: Review and analyze audit logs
+- AU.3.046: Alert on audit process failures
+
+**SIEM Options Comparison:**
+
+| Solution | Deployment | Cost Model | Strengths |
+|----------|------------|------------|-----------|
+| Microsoft Sentinel | Cloud (GCC High) | Per-GB ingested | Native M365 integration |
+| Splunk Cloud (GovCloud) | Cloud | Per-GB indexed | Powerful analytics |
+| Elastic SIEM | Self-hosted | Per-node | Open source flexibility |
+| LogRhythm | On-prem/Cloud | Per-device | SOAR included |
+
+**Recommendation:** Microsoft Sentinel in GCC High tenant for seamless integration with M365 and Azure security tools.
+
+**Required Log Sources:**
+- Azure AD sign-in and audit logs
+- M365 audit logs (Exchange, SharePoint, Teams)
+- Endpoint logs (Defender for Endpoint)
+- AWS CloudTrail (GovCloud)
+- VPN authentication logs
+- Firewall/NGFW logs
+
+### 5.7 Endpoint Detection and Response (EDR)
+
+**EDR is Required** for CMMC Level 2 (SI.2.216, SI.2.217):
+
+| Solution | FedRAMP Status | Integration | Key Features |
+|----------|----------------|-------------|--------------|
+| Microsoft Defender for Endpoint | P1/P2 in GCC High | Native M365 | Included with E5 |
+| CrowdStrike Falcon GovCloud | FedRAMP High | API-based | Industry-leading detection |
+| SentinelOne Singularity | FedRAMP Moderate | API-based | AI-driven response |
+| Carbon Black Cloud | FedRAMP Moderate | API-based | VMware ecosystem |
+
+**Recommendation for Furientis:**
+- **Budget-conscious:** Microsoft Defender for Endpoint (included with M365 E5)
+- **Best-in-class:** CrowdStrike Falcon GovCloud
+
+### 5.8 Mobile Device Management
+
+If mobile devices access CUI (generally discouraged):
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Device Enrollment | Microsoft Intune (GCC High) |
+| Encryption | Device-level encryption required |
+| Remote Wipe | Capability required |
+| App Protection | MAM policies for M365 apps |
+| Jailbreak Detection | Block jailbroken/rooted devices |
+
+**Best Practice:** Minimize mobile access to CUI. Use virtual desktop (WorkSpaces) from mobile when necessary.
+
+---
+
+## 6. Software Requirements and Approved Versions
+
+### 6.1 Microsoft 365 Licensing
+
+**GCC High License Tiers:**
+
+| License | Key Features | Per User/Month (Est.) |
+|---------|--------------|----------------------|
+| M365 E3 | Core productivity, basic security | $35-40 |
+| M365 E5 | Advanced security, Defender, eDiscovery | $55-60 |
+| E5 Security Add-on | Add E5 security to E3 base | $15-20 |
+
+**Minimum Recommendation:** M365 E3 for all CUI users + E5 Security add-on
+
+**Required M365 Components:**
+- Exchange Online (Plan 2)
+- SharePoint Online (Plan 2)
+- Teams
+- OneDrive for Business
+- Azure AD Premium P1 (P2 for PIM)
+- Microsoft Defender for Endpoint P1
+
+### 6.2 Operating System Requirements
+
+**Supported Operating Systems for CUI Enclave:**
+
+| OS | Version | Notes |
+|----|---------|-------|
+| Windows 11 Enterprise | 23H2+ | Recommended; required for new hardware |
+| Windows 10 Enterprise | 22H2 | Supported until Oct 2025 |
+| Windows Server | 2019/2022 | For server workloads |
+| macOS | Monterey (12) or later | With Intune enrollment |
+| Linux | RHEL 8/9, Ubuntu 22.04 LTS | For development; requires additional controls |
+
+**Windows Hardening:**
+- Apply DISA STIG or CIS Benchmarks
+- Enable Credential Guard
+- Configure Windows Defender Application Control (WDAC)
+- BitLocker with TPM + PIN
+- Disable SMBv1, enable SMB signing
+
+### 6.3 Development Tools
+
+**Approved Development Tools:**
+
+| Category | Tool | Compliance Notes |
+|----------|------|------------------|
+| IDE | VS Code, Visual Studio, JetBrains IDEs | Disable telemetry, no cloud sync for CUI projects |
+| Source Control | GitHub Enterprise Server (self-hosted) | In GovCloud; or Azure DevOps Server |
+| CI/CD | GitHub Actions (self-hosted runners), Jenkins | Runners in GovCloud |
+| Containers | Docker, Podman | Images scanned before deployment |
+| Kubernetes | EKS in GovCloud, OpenShift | Managed K8s in compliant environment |
+
+**Git/Source Control Best Practices:**
+1. **No GitHub.com for CUI code** - Use self-hosted GitHub Enterprise or Azure DevOps
+2. **Pre-commit hooks** - Scan for secrets, CUI markers
+3. **Branch protection** - Require code review, signed commits
+4. **Audit logs** - Track all repository access
+
+### 6.4 Browser Requirements
+
+| Browser | Approved for CUI | Notes |
+|---------|------------------|-------|
+| Microsoft Edge | Yes | Recommended; Intune managed |
+| Google Chrome | Yes | Enterprise managed |
+| Firefox ESR | Yes | Enterprise managed |
+| Safari | Conditional | macOS only, limited management |
+
+**Browser Hardening:**
+- Managed via Intune or Group Policy
+- Disable password sync to personal accounts
+- Configure site isolation
+- Enable SmartScreen/Safe Browsing
+- Block known-bad extensions
+
+### 6.5 Video Conferencing
+
+| Solution | CUI Suitable | Notes |
+|----------|--------------|-------|
+| Microsoft Teams (GCC High) | Yes | Recommended |
+| Zoom Gov | Yes | FedRAMP authorized |
+| Webex FedRAMP | Yes | FedRAMP authorized |
+| Google Meet | No | Not authorized for CUI |
+| Standard Zoom/Teams | No | Commercial versions not suitable |
+
+**Teams Meeting Security:**
+- Enable lobby for external participants
+- Disable anonymous join
+- Watermark shared content
+- Meeting recording only to compliant storage
+
+### 6.6 Other Business Software
+
+| Category | Approved Options |
+|----------|------------------|
+| Password Manager | Keeper Enterprise (FedRAMP), 1Password Business |
+| Note-taking | OneNote (GCC High), SharePoint |
+| Project Management | Microsoft Planner, Azure DevOps Boards |
+| Documentation | SharePoint, Confluence Data Center (self-hosted) |
+| Diagramming | Visio (GCC High), draw.io (self-hosted) |
+| PDF | Adobe Acrobat DC (managed) |
+
+---
+
